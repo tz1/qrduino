@@ -1,0 +1,47 @@
+HOSTGCC=gcc
+
+all: lcd.hex oled.hex qrjpeg.hex
+
+.SUFFIXES: .elf .hex .eep .lss .sym .upload .dsm
+
+#CPU=m328p
+CPU=atmega328p
+PORT=/dev/ttyUSB0
+
+XTAL=8000000 #Arduino 3.3v Pro
+CFLAGS=-g -DF_CPU=$(XTAL) -I ../uart  -DTXBUFBITS=8 -DRXBUFBITS=8 -O
+
+.elf.dsm:
+	avr-objdump --disassemble -S $^ >$@
+
+.c.s:
+	avr-gcc $(CFLAGS) -Wall -mmcu=$(CPU) -S $^ -o $@
+
+MAP=-Wl,"-Map" -Wl,"$@.map" -Wl,"--cref"
+
+.c.o:
+	avr-gcc $(CFLAGS) -Wall -mmcu=$(CPU)  $< -o $@ -c
+
+.elf.hex:
+	avr-objcopy -O ihex -R .eeprom $< $@
+
+.hex.upload: 
+	avrdude -F -p $(CPU) -P $(PORT) -c arduino -b 57600 -U $^
+
+lcd.elf: lcd.o qrencode.o qrv6l1.o #qrframe.o
+	avr-gcc $(CFLAGS) -Wall -mmcu=$(CPU)  $^ -o $@ 
+
+oled.elf: oled.o qrencode.o qrv6l1.o #qrframe.o
+	avr-gcc $(CFLAGS) -Wall -mmcu=$(CPU)  $^ -o $@ $(MAP)
+
+qrjpeg.elf: qrjpeg.o qrencode.o qrframe.o
+	avr-gcc $(CFLAGS) -Wall -mmcu=$(CPU)  $^ -o $@ $(MAP)
+
+clean:
+	rm -rf qrencode *.o *.elf dofbit qrv6l1.* *.map
+
+qrv6l1.c: dofbit
+	./dofbit 6 1 >qrv6l1.c
+
+dofbit: dofbit.c qrframe.c
+	$(HOSTGCC) $^ -o $@

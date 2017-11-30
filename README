@@ -1,0 +1,13 @@
+EMBEDDED QR CODE GENERATOR
+
+Copyright 2010, tz@execpc.com.
+
+Relased under ther terms of the GNU General Public License v3.
+
+Targetd toward limited RAM systems - it tends to use more code and is slower but fits within an Arduino.
+
+For linux/posix, type make.  For arduino, type make -f Makefile.avr.
+
+qrenc defaults to version 6, level L ecc, but you can specify the version, or the version and the error level.
+
+dofbits will generate a C file with the frame for one version/ecc level which will save a lot of RAM.  This file will link with qrencode.c
